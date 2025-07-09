@@ -1,0 +1,46 @@
+services:
+  db:
+    image: postgres:15
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: booking_service
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - prince-group-backend
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: prince_backend
+    restart: always
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@db:5432/booking_service?sslmode=disable
+      - FIREBASE_TYPE=${FIREBASE_TYPE}
+      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
+      - FIREBASE_PRIVATE_KEY_ID=${FIREBASE_PRIVATE_KEY_ID}
+      - FIREBASE_PRIVATE_KEY=${FIREBASE_PRIVATE_KEY}
+      - FIREBASE_CLIENT_EMAIL=${FIREBASE_CLIENT_EMAIL}
+      - FIREBASE_CLIENT_ID=${FIREBASE_CLIENT_ID}
+      - FIREBASE_AUTH_URI=${FIREBASE_AUTH_URI}
+      - FIREBASE_TOKEN_URI=${FIREBASE_TOKEN_URI}
+      - FIREBASE_AUTH_PROVIDER_CERT_URL=${FIREBASE_AUTH_PROVIDER_CERT_URL}
+      - FIREBASE_CLIENT_CERT_URL=${FIREBASE_CLIENT_CERT_URL}
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    networks:
+      - prince-group-backend
+    volumes:
+      - ./firebase-service-account.json:/app/firebase-service-account.json:ro
+
+volumes:
+  postgres_data:
+
+networks:
+  prince-group-backend:
