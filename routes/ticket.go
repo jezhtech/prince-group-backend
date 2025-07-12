@@ -9,8 +9,8 @@ import (
 func TicketRoutes(router *gin.RouterGroup) {
 	ticketRouter := router.Group("/ticket")
 
-	ticketRouter.GET("/", middleware.UserMiddleware(), controllers.GetTicket)
-	ticketRouter.GET("/all", middleware.UserMiddleware(), controllers.GetAllTickets)
+	ticketRouter.GET("/:id", middleware.UserMiddleware(), controllers.GetTicket)
+	ticketRouter.GET("/", controllers.GetAllTickets)
 	ticketRouter.POST("/", middleware.AdminMiddleware(), controllers.CreateTicket)
 	ticketRouter.PUT("/:id", middleware.AdminMiddleware(), controllers.UpdateTicket)
 	ticketRouter.DELETE("/:id", middleware.AdminMiddleware(), controllers.DeleteTicket)

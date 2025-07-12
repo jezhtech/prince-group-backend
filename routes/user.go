@@ -12,7 +12,7 @@ func UserRoutes(router *gin.RouterGroup) {
 	userRouter.GET("/", middleware.UserMiddleware(), controllers.GetUserData)
 	userRouter.POST("/", middleware.UserMiddleware(), controllers.CreateUser)
 	userRouter.GET("/:id", middleware.UserMiddleware(), controllers.GetUser)
-	userRouter.PUT("/:id", middleware.UserMiddleware(), controllers.UpdateUser)
+	userRouter.PUT("/", middleware.UserMiddleware(), controllers.UpdateUser)
 
 	userRouter.GET("/all", middleware.AdminMiddleware(), controllers.GetAllUsers)
 	userRouter.DELETE("/:id", middleware.AdminMiddleware(), controllers.DeleteUser)

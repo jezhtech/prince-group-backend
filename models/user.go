@@ -14,6 +14,12 @@ type User struct {
 	FullName   string    `gorm:"not null" json:"fullName"`
 	Email      string    `gorm:"not null;unique" json:"email"`
 	Mobile     string    `gorm:"not null" json:"mobile"`
+	Address    string    `gorm:"not null" json:"address"`
+	City       string    `gorm:"not null" json:"city"`
+	State      string    `gorm:"not null" json:"state"`
+	Zip        string    `gorm:"not null" json:"zip"`
+	Pincode    string    `gorm:"not null" json:"pincode"`
+	Aadhaar    string    `gorm:"not null" json:"aadhaar"`
 	CreatedAt  time.Time `gorm:"autoCreateTime" json:"createdAt"`
 	UpdatedAt  time.Time `gorm:"autoUpdateTime" json:"updatedAt"`
 }

@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -11,6 +12,7 @@ import (
 
 func GetAllUsers(c *gin.Context) {
 	users, err := models.GetAllUsers()
+	fmt.Println(users)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get users"})
 		return
@@ -40,7 +42,7 @@ func GetUser(c *gin.Context) {
 
 	var user models.User
 
-	err := config.DB.Where("userId = ?", userID).First(&user).Error
+	err := config.DB.Where("user_id = ?", userID).First(&user).Error
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user"})
@@ -61,7 +63,26 @@ func CreateUser(c *gin.Context) {
 		return
 	}
 
-	user.UserID = helper.GenerateUserID()
+	// Generate unique UserID with retry logic
+	maxRetries := 10
+	for i := 0; i < maxRetries; i++ {
+		user.UserID = helper.GenerateUserID()
+
+		// Check if UserID already exists
+		var existingUser models.User
+		err := config.DB.Where("user_id = ?", user.UserID).First(&existingUser).Error
+
+		if err != nil {
+			// UserID doesn't exist, we can use it
+			break
+		}
+
+		// If we've tried maxRetries times, return an error
+		if i == maxRetries-1 {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate unique user ID after multiple attempts"})
+			return
+		}
+	}
 
 	err = config.DB.Create(&user).Error
 	if err != nil {
@@ -76,11 +97,11 @@ func CreateUser(c *gin.Context) {
 }
 
 func UpdateUser(c *gin.Context) {
-	userID := c.GetString("uid")
+	firebaseID := c.GetString("firebaseId")
 
 	var user models.User
 
-	err := config.DB.Where("userId = ?", userID).First(&user).Error
+	err := config.DB.Where("firebase_id = ?", firebaseID).First(&user).Error
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user"})
 		return
@@ -91,6 +112,9 @@ func UpdateUser(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
+
+	// Explicitly set role to 'user' to prevent someone from sending role as admin and get easy get the admin access
+	user.Role = "user"
 
 	err = config.DB.Save(&user).Error
 	if err != nil {

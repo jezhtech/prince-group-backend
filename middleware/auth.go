@@ -27,6 +27,7 @@ func UserMiddleware() gin.HandlerFunc {
 
 func AdminMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		fmt.Println("AdminMiddleware")
 		tokenStr := strings.TrimPrefix(c.GetHeader("Authorization"), "Bearer ")
 		token, err := config.FirebaseAuth.VerifyIDToken(context.Background(), tokenStr)
 		if err != nil {

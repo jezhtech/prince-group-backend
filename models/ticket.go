@@ -7,16 +7,19 @@ import (
 )
 
 type Ticket struct {
-	ID               uint      `gorm:"primaryKey" json:"id"`
-	Name             string    `gorm:"not null" json:"name"`
-	Price            int       `gorm:"not null" json:"price"`
-	Type             string    `gorm:"not null" json:"type"`
-	Status           string    `gorm:"not null" json:"status"`
-	Amount           int       `gorm:"not null" json:"amount"`
-	TotalTickets     int       `gorm:"not null" json:"totalTickets"`
-	AvailableTickets int       `gorm:"not null" json:"availableTickets"`
-	CreatedAt        time.Time `gorm:"autoCreateTime" json:"createdAt"`
-	UpdatedAt        time.Time `gorm:"autoUpdateTime" json:"updatedAt"`
+	ID                               uint      `gorm:"primaryKey" json:"id"`
+	Name                             string    `gorm:"not null" json:"name"`
+	Price                            int       `gorm:"not null" json:"price"`
+	Type                             string    `gorm:"not null" json:"type"`
+	Description                      string    `gorm:"not null" json:"description"`
+	Benefits                         []string  `gorm:"serializer:json;not null" json:"benefits"`
+	Status                           string    `gorm:"not null" json:"status"`
+	TotalTickets                     int       `gorm:"not null" json:"totalTickets"`
+	OfferPriceWithReferral           int       `gorm:"not null" json:"offerPriceWithReferral"`
+	OfferPriceWithReferralAndYoutube int       `gorm:"not null" json:"offerPriceWithReferralAndYoutube"`
+	AvailableTickets                 int       `gorm:"not null" json:"availableTickets"`
+	CreatedAt                        time.Time `gorm:"autoCreateTime" json:"createdAt"`
+	UpdatedAt                        time.Time `gorm:"autoUpdateTime" json:"updatedAt"`
 }
 
 func GetTicketByID(id uint) (Ticket, error) {
