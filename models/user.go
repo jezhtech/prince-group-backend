@@ -8,10 +8,10 @@ import (
 
 type User struct {
 	ID         uint      `gorm:"primaryKey" json:"id"`
-	UserID     string    `gorm:"not null;unique" json:"userId"`
-	FirebaseID string    `gorm:"not null;unique" json:"firebaseId"`
+	UserID     string    `gorm:"column:user_id;not null;unique" json:"userId"`
+	FirebaseID string    `gorm:"column:firebase_id;not null;unique" json:"firebaseId"`
 	Role       string    `gorm:"not null;default:'user';enum:user,admin" json:"role"`
-	FullName   string    `gorm:"not null" json:"fullName"`
+	FullName   string    `gorm:"column:full_name;not null" json:"fullName"`
 	Email      string    `gorm:"not null;unique" json:"email"`
 	Mobile     string    `gorm:"not null" json:"mobile"`
 	Address    string    `gorm:"not null" json:"address"`

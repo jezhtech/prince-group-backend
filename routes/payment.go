@@ -13,8 +13,12 @@ func PaymentRoutes(router *gin.RouterGroup) {
 	paymentRouter.POST("/links", middleware.UserMiddleware(), controllers.CreatePaymentLink)
 	paymentRouter.GET("/status/:linkId", middleware.UserMiddleware(), controllers.CheckPaymentStatus)
 	paymentRouter.GET("/history", middleware.UserMiddleware(), controllers.GetPaymentHistory)
+	paymentRouter.POST("/send-email/:bookingNumber", middleware.UserMiddleware(), controllers.SendPaymentConfirmationEmail)
 
 	// Public routes (no authentication required)
 	paymentRouter.POST("/webhook", controllers.PaymentWebhook)
 	paymentRouter.GET("/callback", controllers.PaymentCallback)
+
+	// Test endpoint (for development only)
+	paymentRouter.GET("/test-email", controllers.TestEmailEndpoint)
 }

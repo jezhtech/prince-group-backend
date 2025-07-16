@@ -13,6 +13,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/jezhtech/prince-group-backend/helper"
 	"github.com/jezhtech/prince-group-backend/models"
 )
 
@@ -214,6 +215,15 @@ func CheckPaymentStatus(c *gin.Context) {
 		return
 	}
 
+	// If payment is successful, send confirmation email
+	if status.Status == "success" {
+		// Get booking by linkID
+		booking, err := models.GetBookingByOrderID(linkID)
+		if err == nil {
+			sendPaymentConfirmationEmail(booking.BookingNumber)
+		}
+	}
+
 	c.JSON(http.StatusOK, status)
 }
 
@@ -305,6 +315,11 @@ func PaymentCallback(c *gin.Context) {
 		return
 	}
 
+	// Send confirmation email if payment is successful
+	if paymentStatus == "SUCCESS" {
+		sendPaymentConfirmationEmail(updatedBooking.BookingNumber)
+	}
+
 	// Redirect to frontend with status and orderID
 	redirectURL := os.Getenv("FRONTEND_URL") + "/payment/result"
 	if paymentStatus == "SUCCESS" {
@@ -314,6 +329,47 @@ func PaymentCallback(c *gin.Context) {
 	}
 
 	c.Redirect(http.StatusFound, redirectURL)
+}
+
+// SendPaymentConfirmationEmail manually sends a payment confirmation email for a booking
+func SendPaymentConfirmationEmail(c *gin.Context) {
+	// Get Firebase ID from context (set by middleware)
+	_, exists := c.Get("firebaseId")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
+		return
+	}
+
+	bookingNumber := c.Param("bookingNumber")
+	if bookingNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Booking number is required"})
+		return
+	}
+
+	// Send the confirmation email
+	sendPaymentConfirmationEmail(bookingNumber)
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  "success",
+		"message": "Payment confirmation email sent successfully",
+	})
+}
+
+// TestEmailEndpoint is a test endpoint to manually trigger email sending (for development only)
+func TestEmailEndpoint(c *gin.Context) {
+	bookingNumber := c.Query("bookingNumber")
+	if bookingNumber == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Booking number is required"})
+		return
+	}
+
+	// Send the confirmation email
+	sendPaymentConfirmationEmail(bookingNumber)
+
+	c.JSON(http.StatusOK, gin.H{
+		"status":  "success",
+		"message": "Test email sent successfully",
+	})
 }
 
 // Helper function to create Cashfree payment link using their API
@@ -575,4 +631,49 @@ func verifyWebhookSignature(signature string, body []byte) bool {
 	expectedSignature := hex.EncodeToString(h.Sum(nil))
 
 	return signature == expectedSignature
+}
+
+// sendPaymentConfirmationEmail sends a confirmation email for successful payments
+func sendPaymentConfirmationEmail(bookingNumber string) {
+	// Get booking with preloaded data
+	booking, err := models.GetBookingWithEmailData(bookingNumber)
+	if err != nil {
+		fmt.Printf("Failed to get booking data for %s: %v\n", bookingNumber, err)
+		return
+	}
+
+	// Calculate free tickets based on ticket count
+	ticketCount := booking.TicketCount
+	freeTickets := 0
+	if ticketCount >= 8 {
+		freeTickets = 2
+	} else if ticketCount >= 4 {
+		freeTickets = 1
+	}
+
+	// Calculate total amount (ticket price * paid tickets)
+	paidTickets := ticketCount - freeTickets
+	totalAmount := float64(paidTickets) * float64(booking.Ticket.Price)
+
+	// Send confirmation email
+	fmt.Printf("Sending email to: %s, Name: %s, Booking: %s, Ticket: %s, Count: %d, Amount: %.2f, Free: %d\n",
+		booking.User.Email, booking.User.FullName, booking.BookingNumber,
+		booking.Ticket.Name, ticketCount, totalAmount, freeTickets)
+
+	err = helper.SendPaymentConfirmationEmail(
+		booking.User.Email,
+		booking.User.FullName,
+		booking.BookingNumber,
+		booking.Ticket.Name,
+		fmt.Sprintf("%d", ticketCount),
+		fmt.Sprintf("%.2f", totalAmount),
+		"September 20, 2025 • 5:00 PM",
+		"Concordia High School Ground, Nagercoil",
+		freeTickets,
+	)
+	if err != nil {
+		fmt.Printf("Failed to send confirmation email: %v\n", err)
+	} else {
+		fmt.Printf("Confirmation email sent successfully to %s\n", booking.User.Email)
+	}
 }

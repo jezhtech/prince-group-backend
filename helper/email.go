@@ -3,6 +3,8 @@ package helper
 import (
 	"fmt"
 	"os"
+	"strconv"
+	"strings"
 
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
@@ -186,6 +188,145 @@ func SendBookingConfirmationEmail(to, customerName, bookingID, eventName, eventD
     </div>
 </body>
 </html>`, customerName, bookingID, eventName, eventDate, eventLocation)
+
+	return SendEmail(to, subject, htmlBody)
+}
+
+// SendPaymentConfirmationEmail sends a payment confirmation email with ticket details
+func SendPaymentConfirmationEmail(to, customerName, bookingNumber, ticketName, ticketCount, totalAmount, eventDate, eventLocation string, freeTickets int) error {
+	subject := "Payment Successful - Prince Group Mega Music Festival"
+
+	// Calculate paid tickets
+	paidTickets := ticketCount
+	if freeTickets > 0 {
+		// Extract the number from ticketCount string (e.g., "5" from "5 tickets")
+		if count, err := strconv.Atoi(strings.Fields(ticketCount)[0]); err == nil {
+			paidTickets = fmt.Sprintf("%d", count-freeTickets)
+		}
+	}
+
+	htmlBody := fmt.Sprintf(`
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Confirmation</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+        .container { max-width: 600px; margin: 0 auto; background: #fff; }
+        .header { background: linear-gradient(135deg, #4eb4a7 0%%, #60afb4 100%%); color: white; padding: 40px; text-align: center; }
+        .content { padding: 40px; }
+        .success-icon { font-size: 48px; margin-bottom: 20px; }
+        .ticket-card { background: linear-gradient(135deg, #f8f9fa 0%%, #e9ecef 100%%); border-radius: 15px; padding: 30px; margin: 30px 0; border-left: 5px solid #4eb4a7; }
+        .booking-details { background: #f8f9fa; padding: 25px; border-radius: 10px; margin: 25px 0; }
+        .free-ticket-badge { background: linear-gradient(135deg, #28a745 0%%, #20c997 100%%); color: white; padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: bold; display: inline-block; margin: 10px 0; }
+        .event-details { background: #fff3cd; border: 1px solid #ffeaa7; padding: 20px; border-radius: 10px; margin: 25px 0; }
+        .footer { background: #f8f9fa; padding: 30px; text-align: center; color: #666; }
+        .qr-placeholder { background: #e9ecef; border: 2px dashed #adb5bd; border-radius: 10px; padding: 40px; text-align: center; margin: 20px 0; }
+        .price-highlight { font-size: 24px; font-weight: bold; color: #28a745; }
+        .ticket-count { font-size: 20px; font-weight: bold; color: #4eb4a7; }
+        .important-note { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="success-icon">🎉</div>
+            <h1>Payment Successful!</h1>
+            <p>Your concert tickets have been confirmed</p>
+        </div>
+        
+        <div class="content">
+            <h2>Hello %s!</h2>
+            <p>Thank you for your payment. Your booking has been successfully confirmed!</p>
+            
+            <div class="ticket-card">
+                <h3 style="color: #4eb4a7; margin-top: 0;">🎫 Ticket Details</h3>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin: 15px 0;">
+                    <span style="font-size: 18px; font-weight: bold;">%s</span>
+                    <span class="ticket-count">%s</span>
+                </div>
+                %s
+                <div style="margin-top: 20px;">
+                    <span class="price-highlight">₹%s</span>
+                    <span style="color: #666; font-size: 14px;"> (Total Amount Paid)</span>
+                </div>
+            </div>
+            
+            <div class="booking-details">
+                <h3 style="color: #495057; margin-top: 0;">📋 Booking Information</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 20px 0;">
+                    <div>
+                        <strong>Booking Number:</strong><br>
+                        <span style="color: #4eb4a7; font-family: monospace; font-size: 16px;">%s</span>
+                    </div>
+                    <div>
+                        <strong>Payment Status:</strong><br>
+                        <span style="color: #28a745; font-weight: bold;">✅ Confirmed</span>
+                    </div>
+                    <div>
+                        <strong>Tickets Paid For:</strong><br>
+                        <span style="font-weight: bold;">%s</span>
+                    </div>
+                    <div>
+                        <strong>Free Tickets:</strong><br>
+                        <span style="color: #28a745; font-weight: bold;">%d</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="event-details">
+                <h3 style="color: #856404; margin-top: 0;">🎵 Event Details</h3>
+                <div style="margin: 15px 0;">
+                    <strong>Date & Time:</strong> %s<br>
+                    <strong>Venue:</strong> %s<br>
+                    <strong>Artists:</strong> Aditya Rkay, Sri Nisha, Aparnaa Pratheep
+                </div>
+            </div>
+            
+            <div class="qr-placeholder">
+                <h4 style="margin-top: 0; color: #666;">🎫 Entry Pass</h4>
+                <p style="color: #666; margin-bottom: 20px;">Your QR code will be generated and sent separately</p>
+                <div style="background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 20px; display: inline-block;">
+                    <div style="width: 120px; height: 120px; background: #f8f9fa; border: 2px dashed #adb5bd; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #666; font-size: 12px;">
+                        QR Code<br>Coming Soon
+                    </div>
+                </div>
+            </div>
+            
+            <div class="important-note">
+                <h4 style="margin-top: 0; color: #856404;">⚠️ Important Information</h4>
+                <ul style="margin: 10px 0; padding-left: 20px;">
+                    <li>Please arrive 30 minutes before the event starts</li>
+                    <li>Bring a valid ID for verification</li>
+                    <li>Entry will be denied without proper identification</li>
+                    <li>No outside food or beverages allowed</li>
+                    <li>Parking is available at the venue</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p><strong>Prince Group Vista</strong></p>
+            <p>Thank you for choosing us for your entertainment!</p>
+            <p style="font-size: 12px; color: #999;">This is an automated message, please do not reply.</p>
+        </div>
+    </div>
+</body>
+</html>`, customerName, ticketName, ticketCount,
+		func() string {
+			if freeTickets > 0 {
+				return fmt.Sprintf(`<div class="free-ticket-badge">🎁 You got %d FREE ticket%s!</div>`, freeTickets, func() string {
+					if freeTickets == 1 {
+						return ""
+					} else {
+						return "s"
+					}
+				}())
+			}
+			return ""
+		}(), totalAmount, bookingNumber, paidTickets, freeTickets, eventDate, eventLocation)
 
 	return SendEmail(to, subject, htmlBody)
 }
