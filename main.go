@@ -16,7 +16,7 @@ func main() {
 	corsConfig := cors.DefaultConfig()
 	corsConfig.AllowAllOrigins = true
 	corsConfig.AllowCredentials = true
-	corsConfig.AllowHeaders = []string{"Authorization", "Content-Type"}
+	corsConfig.AllowHeaders = []string{"Authorization", "Content-Type", "X-Google-Access-Token"}
 	router.Use(cors.New(corsConfig))
 
 	routes.AppRouter(router)

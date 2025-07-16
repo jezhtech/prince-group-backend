@@ -26,6 +26,17 @@ func GetReferralByID(id string) (Referral, error) {
 	return referral, nil
 }
 
+func GetReferralByCode(code string) (Referral, error) {
+	var referral Referral
+
+	err := config.DB.Where("referral_id = ?", code).First(&referral).Error
+	if err != nil {
+		return Referral{}, err
+	}
+
+	return referral, nil
+}
+
 func GetAllReferrals() ([]Referral, error) {
 	var referrals []Referral
 

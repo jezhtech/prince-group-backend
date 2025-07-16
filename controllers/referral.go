@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -94,5 +95,26 @@ func DeleteReferral(c *gin.Context) {
 
 	c.JSON(200, gin.H{
 		"message": "Referral deleted successfully",
+	})
+}
+
+func CheckReferral(c *gin.Context) {
+	referralCode := c.Query("referralCode")
+	fmt.Println(referralCode)
+	referral, err := models.GetReferralByCode(referralCode)
+
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Referral code not found"})
+		return
+	}
+
+	if referral.ID == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"found": false})
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"found":    true,
+		"referral": referral,
 	})
 }

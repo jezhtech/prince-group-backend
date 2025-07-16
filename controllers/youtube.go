@@ -24,6 +24,7 @@ func CheckYouTubeSubscription(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Channel ID is required"})
 		return
 	}
+	fmt.Println("channelID", channelID)
 
 	// Get Firebase ID from context (set by middleware)
 	firebaseID, exists := c.Get("firebaseId")
@@ -41,6 +42,7 @@ func CheckYouTubeSubscription(c *gin.Context) {
 	// Get Google access token from request header
 	// The frontend should send this in the X-Google-Access-Token header
 	googleAccessToken := c.GetHeader("X-Google-Access-Token")
+
 	if googleAccessToken == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error":        "Google access token required. Please sign in with Google and pass the access token in X-Google-Access-Token header",

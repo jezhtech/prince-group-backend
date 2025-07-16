@@ -14,4 +14,5 @@ func ReferralRoutes(router *gin.RouterGroup) {
 	referralRouter.POST("/", middleware.AdminMiddleware(), controllers.CreateReferral)
 	referralRouter.PUT("/:id", middleware.AdminMiddleware(), controllers.UpdateReferral)
 	referralRouter.DELETE("/:id", middleware.AdminMiddleware(), controllers.DeleteReferral)
+	referralRouter.GET("/check-referral", middleware.UserMiddleware(), controllers.CheckReferral)
 }

@@ -9,9 +9,11 @@ import (
 func BookingRoutes(router *gin.RouterGroup) {
 	bookingRouter := router.Group("/booking")
 
-	bookingRouter.GET("/:id", middleware.UserMiddleware(), controllers.GetBooking)
-	bookingRouter.GET("/all", middleware.UserMiddleware(), controllers.GetAllBookings)
+	bookingRouter.GET("/:bookingNumber", middleware.UserMiddleware(), controllers.GetBooking)
+	bookingRouter.GET("/admin/all", middleware.AdminMiddleware(), controllers.GetAllBookings)
 	bookingRouter.POST("/", middleware.UserMiddleware(), controllers.CreateBooking)
-	bookingRouter.PUT("/:id", middleware.UserMiddleware(), controllers.UpdateBooking)
+	bookingRouter.PUT("/:bookingNumber", middleware.UserMiddleware(), controllers.UpdateBooking)
 	bookingRouter.DELETE("/:id", middleware.UserMiddleware(), controllers.DeleteBooking)
+	bookingRouter.GET("/user", middleware.UserMiddleware(), controllers.GetBookingsByUserId)
+	bookingRouter.GET("/check-payment/:bookingNumber", middleware.UserMiddleware(), controllers.CheckPayment)
 }
