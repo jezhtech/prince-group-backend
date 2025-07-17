@@ -34,19 +34,28 @@ func GetUserData(c *gin.Context) {
 		email := c.GetString("email")
 
 		// Try to get user by ID first, then by email
-		err = config.DB.Where("id = ?", userID).First(&user).Error
-		if err != nil {
-			// Try by email if ID lookup fails
+		if userID != "" {
+			if userIDInt, parseErr := strconv.ParseUint(userID, 10, 32); parseErr == nil {
+				err = config.DB.Where("id = ?", uint(userIDInt)).First(&user).Error
+			}
+		}
+
+		// If ID lookup fails or userID is empty, try by email
+		if err != nil && email != "" {
 			err = config.DB.Where("email = ?", email).First(&user).Error
 		}
 	} else {
 		// Firebase authentication
 		firebaseID := c.GetString("firebaseId")
-		user, err = models.GetUserByFirebaseId(firebaseID)
+		if firebaseID != "" {
+			user, err = models.GetUserByFirebaseId(firebaseID)
+		} else {
+			err = models.ErrUserNotFound
+		}
 	}
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
 	}
 
@@ -56,14 +65,38 @@ func GetUserData(c *gin.Context) {
 }
 
 func GetUser(c *gin.Context) {
-	userID := c.GetString("uid")
+	authType := c.GetString("auth_type")
 
 	var user models.User
+	var err error
 
-	err := config.DB.Where("user_id = ?", userID).First(&user).Error
+	if authType == "jwt" {
+		// JWT authentication - get user by ID or email
+		userID := c.GetString("user_id")
+		email := c.GetString("email")
+
+		if userID != "" {
+			if userIDInt, parseErr := strconv.ParseUint(userID, 10, 32); parseErr == nil {
+				err = config.DB.Where("id = ?", uint(userIDInt)).First(&user).Error
+			}
+		}
+
+		// If ID lookup fails or userID is empty, try by email
+		if err != nil && email != "" {
+			err = config.DB.Where("email = ?", email).First(&user).Error
+		}
+	} else {
+		// Firebase authentication - get user by firebase_id
+		firebaseID := c.GetString("firebaseId")
+		if firebaseID != "" {
+			user, err = models.GetUserByFirebaseId(firebaseID)
+		} else {
+			err = models.ErrUserNotFound
+		}
+	}
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
 	}
 
@@ -92,7 +125,17 @@ func CreateUser(c *gin.Context) {
 
 		// Check if user already exists
 		var existingUser models.User
-		err := config.DB.Where("id = ? OR email = ?", userID, email).First(&existingUser).Error
+		if userID != "" {
+			if userIDInt, parseErr := strconv.ParseUint(userID, 10, 32); parseErr == nil {
+				err = config.DB.Where("id = ?", uint(userIDInt)).First(&existingUser).Error
+			}
+		}
+
+		// If ID lookup fails, try by email
+		if err != nil && email != "" {
+			err = config.DB.Where("email = ?", email).First(&existingUser).Error
+		}
+
 		if err == nil {
 			// User exists, return it
 			c.JSON(200, gin.H{
@@ -103,8 +146,10 @@ func CreateUser(c *gin.Context) {
 		}
 
 		// Set the user ID from JWT claims
-		if userIDInt, err := strconv.ParseUint(userID, 10, 32); err == nil {
-			user.ID = uint(userIDInt)
+		if userID != "" {
+			if userIDInt, parseErr := strconv.ParseUint(userID, 10, 32); parseErr == nil {
+				user.ID = uint(userIDInt)
+			}
 		}
 	} else {
 		// Firebase authentication - generate unique UserID
@@ -153,27 +198,47 @@ func UpdateUser(c *gin.Context) {
 		email := c.GetString("email")
 
 		// Try to get user by ID first, then by email
-		err = config.DB.Where("id = ?", userID).First(&user).Error
-		if err != nil {
-			// Try by email if ID lookup fails
+		if userID != "" {
+			if userIDInt, parseErr := strconv.ParseUint(userID, 10, 32); parseErr == nil {
+				err = config.DB.Where("id = ?", uint(userIDInt)).First(&user).Error
+			}
+		}
+
+		// If ID lookup fails or userID is empty, try by email
+		if err != nil && email != "" {
 			err = config.DB.Where("email = ?", email).First(&user).Error
 		}
 	} else {
 		// Firebase authentication
 		firebaseID := c.GetString("firebaseId")
-		err = config.DB.Where("firebase_id = ?", firebaseID).First(&user).Error
+		if firebaseID != "" {
+			user, err = models.GetUserByFirebaseId(firebaseID)
+		} else {
+			err = models.ErrUserNotFound
+		}
 	}
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
 	}
 
-	err = c.ShouldBindJSON(&user)
+	// Bind the update data
+	var updateData models.User
+	err = c.ShouldBindJSON(&updateData)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request body"})
 		return
 	}
+
+	// Update only the allowed fields
+	user.FullName = updateData.FullName
+	user.Mobile = updateData.Mobile
+	user.Address = updateData.Address
+	user.City = updateData.City
+	user.State = updateData.State
+	user.Pincode = updateData.Pincode
+	user.Aadhaar = updateData.Aadhaar
 
 	// Explicitly set role to 'user' to prevent someone from sending role as admin and get easy get the admin access
 	user.Role = "user"
@@ -191,13 +256,39 @@ func UpdateUser(c *gin.Context) {
 }
 
 func DeleteUser(c *gin.Context) {
-	userID := c.GetString("uid")
+	authType := c.GetString("auth_type")
 
 	var user models.User
+	var err error
 
-	err := config.DB.Where("userId = ?", userID).First(&user).Error
+	if authType == "jwt" {
+		// JWT authentication
+		userID := c.GetString("user_id")
+		email := c.GetString("email")
+
+		// Try to get user by ID first, then by email
+		if userID != "" {
+			if userIDInt, parseErr := strconv.ParseUint(userID, 10, 32); parseErr == nil {
+				err = config.DB.Where("id = ?", uint(userIDInt)).First(&user).Error
+			}
+		}
+
+		// If ID lookup fails or userID is empty, try by email
+		if err != nil && email != "" {
+			err = config.DB.Where("email = ?", email).First(&user).Error
+		}
+	} else {
+		// Firebase authentication
+		firebaseID := c.GetString("firebaseId")
+		if firebaseID != "" {
+			user, err = models.GetUserByFirebaseId(firebaseID)
+		} else {
+			err = models.ErrUserNotFound
+		}
+	}
+
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "User not found"})
 		return
 	}
 

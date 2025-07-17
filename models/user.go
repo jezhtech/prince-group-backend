@@ -1,10 +1,14 @@
 package models
 
 import (
+	"errors"
 	"time"
 
 	"github.com/jezhtech/prince-group-backend/config"
 )
+
+// Custom error for user not found
+var ErrUserNotFound = errors.New("user not found")
 
 type User struct {
 	ID         uint      `gorm:"primaryKey" json:"id"`
@@ -40,7 +44,7 @@ func GetUserByFirebaseId(firebaseID string) (User, error) {
 
 	err := config.DB.Where("firebase_id = ?", firebaseID).First(&user).Error
 	if err != nil {
-		return User{}, err
+		return User{}, ErrUserNotFound
 	}
 
 	return user, nil
