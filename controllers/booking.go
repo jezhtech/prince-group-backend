@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -33,6 +34,78 @@ func GetAllBookings(c *gin.Context) {
 
 	c.JSON(200, gin.H{
 		"bookings": bookings,
+	})
+}
+
+// GetAllBookingsPaginated returns paginated bookings with user and ticket data
+func GetAllBookingsPaginated(c *gin.Context) {
+	// Get pagination parameters from query string
+	pageStr := c.DefaultQuery("page", "1")
+	pageSizeStr := c.DefaultQuery("pageSize", "10")
+
+	page, err := strconv.Atoi(pageStr)
+	if err != nil || page < 1 {
+		page = 1
+	}
+
+	pageSize, err := strconv.Atoi(pageSizeStr)
+	if err != nil || pageSize < 1 || pageSize > 100 {
+		pageSize = 10
+	}
+
+	// Get paginated bookings
+	paginatedBookings, err := models.GetAllBookingsPaginated(page, pageSize)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get bookings"})
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"bookings": paginatedBookings.Bookings,
+		"pagination": gin.H{
+			"total":       paginatedBookings.Total,
+			"page":        paginatedBookings.Page,
+			"pageSize":    paginatedBookings.PageSize,
+			"totalPages":  paginatedBookings.TotalPages,
+			"hasNext":     paginatedBookings.HasNext,
+			"hasPrevious": paginatedBookings.HasPrevious,
+		},
+	})
+}
+
+// GetClientBookingsPaginated returns paginated bookings for client access
+func GetClientBookingsPaginated(c *gin.Context) {
+	// Get pagination parameters from query string
+	pageStr := c.DefaultQuery("page", "1")
+	pageSizeStr := c.DefaultQuery("pageSize", "10")
+
+	page, err := strconv.Atoi(pageStr)
+	if err != nil || page < 1 {
+		page = 1
+	}
+
+	pageSize, err := strconv.Atoi(pageSizeStr)
+	if err != nil || pageSize < 1 || pageSize > 100 {
+		pageSize = 10
+	}
+
+	// Get paginated bookings
+	paginatedBookings, err := models.GetAllBookingsPaginated(page, pageSize)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get bookings"})
+		return
+	}
+
+	c.JSON(200, gin.H{
+		"bookings": paginatedBookings.Bookings,
+		"pagination": gin.H{
+			"total":       paginatedBookings.Total,
+			"page":        paginatedBookings.Page,
+			"pageSize":    paginatedBookings.PageSize,
+			"totalPages":  paginatedBookings.TotalPages,
+			"hasNext":     paginatedBookings.HasNext,
+			"hasPrevious": paginatedBookings.HasPrevious,
+		},
 	})
 }
 

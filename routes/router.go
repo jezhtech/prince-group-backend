@@ -14,6 +14,7 @@ func AppRouter(router *gin.Engine) {
 		AuthRoutes(apiRouter)
 		UserRoutes(apiRouter)
 		BookingRoutes(apiRouter)
+		ClientRoutes(apiRouter)
 		ReferralRoutes(apiRouter)
 		TicketRoutes(apiRouter)
 		YouTubeRoutes(apiRouter)

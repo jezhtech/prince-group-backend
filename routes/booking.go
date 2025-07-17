@@ -11,6 +11,7 @@ func BookingRoutes(router *gin.RouterGroup) {
 
 	bookingRouter.GET("/:bookingNumber", middleware.UserMiddleware(), controllers.GetBooking)
 	bookingRouter.GET("/admin/all", middleware.AdminMiddleware(), controllers.GetAllBookings)
+	bookingRouter.GET("/admin/paginated", middleware.AdminMiddleware(), controllers.GetAllBookingsPaginated)
 	bookingRouter.POST("/", middleware.UserMiddleware(), controllers.CreateBooking)
 	bookingRouter.PUT("/:bookingNumber", middleware.UserMiddleware(), controllers.UpdateBooking)
 	bookingRouter.DELETE("/:id", middleware.UserMiddleware(), controllers.DeleteBooking)

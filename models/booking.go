@@ -25,6 +25,17 @@ type Booking struct {
 	Referral Referral `gorm:"foreignKey:ReferralID;references:ReferralID" json:"referral"`
 }
 
+// PaginatedBookings represents a paginated response of bookings
+type PaginatedBookings struct {
+	Bookings    []Booking `json:"bookings"`
+	Total       int64     `json:"total"`
+	Page        int       `json:"page"`
+	PageSize    int       `json:"pageSize"`
+	TotalPages  int       `json:"totalPages"`
+	HasNext     bool      `json:"hasNext"`
+	HasPrevious bool      `json:"hasPrevious"`
+}
+
 func GetBookingByBookingNumber(bookingNumber string) (Booking, error) {
 	var booking Booking
 
@@ -48,6 +59,48 @@ func GetAllBookings() ([]Booking, error) {
 	}
 
 	return bookings, nil
+}
+
+// GetAllBookingsPaginated returns paginated bookings with user, ticket, and referral data
+func GetAllBookingsPaginated(page, pageSize int) (PaginatedBookings, error) {
+	var bookings []Booking
+	var total int64
+
+	// Get total count
+	err := config.DB.Model(&Booking{}).Count(&total).Error
+	if err != nil {
+		return PaginatedBookings{}, err
+	}
+
+	// Calculate pagination values
+	offset := (page - 1) * pageSize
+	totalPages := int((total + int64(pageSize) - 1) / int64(pageSize))
+	hasNext := page < totalPages
+	hasPrevious := page > 1
+
+	// Get paginated bookings with preloaded relations
+	err = config.DB.
+		Preload("User").
+		Preload("Ticket").
+		Preload("Referral").
+		Order("created_at DESC").
+		Offset(offset).
+		Limit(pageSize).
+		Find(&bookings).Error
+
+	if err != nil {
+		return PaginatedBookings{}, err
+	}
+
+	return PaginatedBookings{
+		Bookings:    bookings,
+		Total:       total,
+		Page:        page,
+		PageSize:    pageSize,
+		TotalPages:  totalPages,
+		HasNext:     hasNext,
+		HasPrevious: hasPrevious,
+	}, nil
 }
 
 func CreateBooking(booking Booking) (Booking, error) {

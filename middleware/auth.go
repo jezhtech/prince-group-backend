@@ -146,3 +146,61 @@ func AdminMiddleware() gin.HandlerFunc {
 		c.Next()
 	}
 }
+
+// ClientMiddleware allows both admin and regular users to access client endpoints
+func ClientMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		tokenStr := strings.TrimPrefix(c.GetHeader("Authorization"), "Bearer ")
+		if tokenStr == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "No token provided"})
+			c.Abort()
+			return
+		}
+
+		// Try JWT first
+		jwtSecret := os.Getenv("JWT_SECRET")
+		if jwtSecret == "" {
+			jwtSecret = "your-secret-key-change-in-production"
+		}
+
+		token, err := jwt.Parse(tokenStr, func(token *jwt.Token) (interface{}, error) {
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+			}
+			return []byte(jwtSecret), nil
+		})
+
+		if err == nil && token.Valid {
+			// JWT is valid
+			if claims, ok := token.Claims.(jwt.MapClaims); ok {
+				c.Set("user_id", claims["user_id"])
+				c.Set("email", claims["email"])
+				c.Set("role", claims["role"])
+				c.Set("auth_type", "jwt")
+				c.Next()
+				return
+			}
+		}
+
+		// Try Firebase if JWT failed
+		firebaseToken, err := config.FirebaseAuth.VerifyIDToken(context.Background(), tokenStr)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+			c.Abort()
+			return
+		}
+
+		// Get user to check role
+		user, err := models.GetUserByFirebaseId(firebaseToken.UID)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
+			c.Abort()
+			return
+		}
+
+		c.Set("firebaseId", firebaseToken.UID)
+		c.Set("auth_type", "firebase")
+		c.Set("user_role", user.Role)
+		c.Next()
+	}
+}
