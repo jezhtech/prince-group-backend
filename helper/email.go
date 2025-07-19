@@ -1,6 +1,7 @@
 package helper
 
 import (
+	"encoding/base64"
 	"fmt"
 	"os"
 	"strconv"
@@ -8,6 +9,7 @@ import (
 
 	"github.com/sendgrid/sendgrid-go"
 	"github.com/sendgrid/sendgrid-go/helpers/mail"
+	"github.com/skip2/go-qrcode"
 )
 
 // EmailConfig holds email configuration
@@ -192,6 +194,19 @@ func SendBookingConfirmationEmail(to, customerName, bookingID, eventName, eventD
 	return SendEmail(to, subject, htmlBody)
 }
 
+// generateQRCodeAsBase64 generates a QR code for the given text and returns it as a base64 encoded PNG
+func generateQRCodeAsBase64(text string) (string, error) {
+	// Generate QR code as PNG bytes
+	qrBytes, err := qrcode.Encode(text, qrcode.Medium, 256)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate QR code: %v", err)
+	}
+
+	// Convert to base64
+	base64String := base64.StdEncoding.EncodeToString(qrBytes)
+	return base64String, nil
+}
+
 // SendPaymentConfirmationEmail sends a payment confirmation email with ticket details
 func SendPaymentConfirmationEmail(to, customerName, bookingNumber, ticketName, ticketCount, totalAmount, eventDate, eventLocation string, freeTickets int) error {
 	subject := "Payment Successful - Rhythym of Kumari"
@@ -203,6 +218,30 @@ func SendPaymentConfirmationEmail(to, customerName, bookingNumber, ticketName, t
 		if count, err := strconv.Atoi(strings.Fields(ticketCount)[0]); err == nil {
 			paidTickets = fmt.Sprintf("%d", count-freeTickets)
 		}
+	}
+
+	// Generate QR code for the booking number
+	qrCodeBase64, err := generateQRCodeAsBase64(bookingNumber)
+	if err != nil {
+		// If QR generation fails, use a placeholder
+		qrCodeBase64 = ""
+		fmt.Printf("Warning: Failed to generate QR code for booking %s: %v\n", bookingNumber, err)
+	}
+
+	// Create QR code image HTML
+	qrCodeHTML := ""
+	if qrCodeBase64 != "" {
+		qrCodeHTML = fmt.Sprintf(`
+			<div style="background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 20px; display: inline-block;">
+				<img src="data:image/png;base64,%s" alt="QR Code for Booking %s" style="width: 120px; height: 120px; display: block; margin: 0 auto;" />
+			</div>`, qrCodeBase64, bookingNumber)
+	} else {
+		qrCodeHTML = `
+			<div style="background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 20px; display: inline-block;">
+				<div style="width: 120px; height: 120px; background: #f8f9fa; border: 2px dashed #adb5bd; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #666; font-size: 12px;">
+					QR Code<br>Unavailable
+				</div>
+			</div>`
 	}
 
 	htmlBody := fmt.Sprintf(`
@@ -223,7 +262,7 @@ func SendPaymentConfirmationEmail(to, customerName, bookingNumber, ticketName, t
         .free-ticket-badge { background: linear-gradient(135deg, #28a745 0%%, #20c997 100%%); color: white; padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: bold; display: inline-block; margin: 10px 0; }
         .event-details { background: #fff3cd; border: 1px solid #ffeaa7; padding: 20px; border-radius: 10px; margin: 25px 0; }
         .footer { background: #f8f9fa; padding: 30px; text-align: center; color: #666; }
-        .qr-placeholder { background: #e9ecef; border: 2px dashed #adb5bd; border-radius: 10px; padding: 40px; text-align: center; margin: 20px 0; }
+        .qr-section { background: #e9ecef; border: 2px dashed #adb5bd; border-radius: 10px; padding: 40px; text-align: center; margin: 20px 0; }
         .price-highlight { font-size: 24px; font-weight: bold; color: #28a745; }
         .ticket-count { font-size: 20px; font-weight: bold; color: #4eb4a7; }
         .important-note { background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0; }
@@ -285,14 +324,13 @@ func SendPaymentConfirmationEmail(to, customerName, bookingNumber, ticketName, t
                 </div>
             </div>
             
-            <div class="qr-placeholder">
+            <div class="qr-section">
                 <h4 style="margin-top: 0; color: #666;">🎫 Entry Pass</h4>
-                <p style="color: #666; margin-bottom: 20px;">Your QR code will be generated and sent separately</p>
-                <div style="background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 20px; display: inline-block;">
-                    <div style="width: 120px; height: 120px; background: #f8f9fa; border: 2px dashed #adb5bd; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #666; font-size: 12px;">
-                        QR Code<br>Coming Soon
-                    </div>
-                </div>
+                <p style="color: #666; margin-bottom: 20px;">Scan this QR code at the venue for entry</p>
+                %s
+                <p style="color: #666; font-size: 12px; margin-top: 15px;">
+                    <strong>Booking Number:</strong> %s
+                </p>
             </div>
             
             <div class="important-note">
@@ -326,7 +364,7 @@ func SendPaymentConfirmationEmail(to, customerName, bookingNumber, ticketName, t
 				}())
 			}
 			return ""
-		}(), totalAmount, bookingNumber, paidTickets, freeTickets, eventDate, eventLocation)
+		}(), totalAmount, bookingNumber, paidTickets, freeTickets, eventDate, eventLocation, qrCodeHTML, bookingNumber)
 
 	return SendEmail(to, subject, htmlBody)
 }
