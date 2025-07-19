@@ -133,7 +133,7 @@ func SendOTPEmail(to, otp string) error {
 
 // SendBookingConfirmationEmail sends a booking confirmation email
 func SendBookingConfirmationEmail(to, customerName, bookingID, eventName, eventDate, eventLocation string) error {
-	subject := "Booking Confirmed - Prince Group Mega Music Festival"
+	subject := "Booking Confirmed - Rhythym of Kumari"
 
 	htmlBody := fmt.Sprintf(`
 <!DOCTYPE html>
@@ -157,7 +157,7 @@ func SendBookingConfirmationEmail(to, customerName, bookingID, eventName, eventD
         <div class="header">
             <div class="success-icon">🎉</div>
             <h1>Booking Confirmed!</h1>
-            <p>Prince Group Mega Music Festival</p>
+            <p>Rhythym of Kumari</p>
         </div>
         <div class="content">
             <h2>Hello %s!</h2>
@@ -194,7 +194,7 @@ func SendBookingConfirmationEmail(to, customerName, bookingID, eventName, eventD
 
 // SendPaymentConfirmationEmail sends a payment confirmation email with ticket details
 func SendPaymentConfirmationEmail(to, customerName, bookingNumber, ticketName, ticketCount, totalAmount, eventDate, eventLocation string, freeTickets int) error {
-	subject := "Payment Successful - Prince Group Mega Music Festival"
+	subject := "Payment Successful - Rhythym of Kumari"
 
 	// Calculate paid tickets
 	paidTickets := ticketCount

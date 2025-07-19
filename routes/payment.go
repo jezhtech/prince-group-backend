@@ -18,7 +18,4 @@ func PaymentRoutes(router *gin.RouterGroup) {
 	// Public routes (no authentication required)
 	paymentRouter.POST("/webhook", controllers.PaymentWebhook)
 	paymentRouter.GET("/callback", controllers.PaymentCallback)
-
-	// Test endpoint (for development only)
-	paymentRouter.GET("/test-email", controllers.TestEmailEndpoint)
 }

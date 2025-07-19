@@ -16,6 +16,7 @@ type Booking struct {
 	TicketCount   int       `gorm:"column:ticket_count;not null" json:"ticketCount"`
 	PaymentMethod string    `gorm:"column:payment_method;not null;" json:"paymentMethod"`
 	PaymentStatus string    `gorm:"column:payment_status;not null;enum:pending,success,failed" json:"paymentStatus"`
+	PaymentPrice  float64   `gorm:"column:payment_price;not null" json:"paymentPrice"`
 	PaymentLinkID string    `gorm:"column:payment_link_id;not null" json:"paymentLinkId"`
 	CreatedAt     time.Time `gorm:"autoCreateTime" json:"createdAt"`
 	UpdatedAt     time.Time `gorm:"autoUpdateTime" json:"updatedAt"`

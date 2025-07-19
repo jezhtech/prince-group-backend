@@ -11,9 +11,5 @@ func ClientRoutes(router *gin.RouterGroup) {
 
 	// Client-specific booking routes
 	clientRouter.GET("/bookings/paginated", middleware.ClientMiddleware(), controllers.GetClientBookingsPaginated)
-
-	// Add more client-specific routes here as needed
-	// clientRouter.GET("/dashboard", middleware.ClientMiddleware(), controllers.GetClientDashboard)
-	// clientRouter.GET("/profile", middleware.ClientMiddleware(), controllers.GetClientProfile)
-	// clientRouter.PUT("/profile", middleware.ClientMiddleware(), controllers.UpdateClientProfile)
+	clientRouter.GET("/bookings/stats", middleware.ClientMiddleware(), controllers.GetClientBookingsStats)
 }

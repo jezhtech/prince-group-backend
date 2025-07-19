@@ -109,6 +109,42 @@ func GetClientBookingsPaginated(c *gin.Context) {
 	})
 }
 
+// GetClientBookingsStats returns overall booking statistics for client
+func GetClientBookingsStats(c *gin.Context) {
+	// Get all bookings to calculate stats
+	allBookings, err := models.GetAllBookings()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get booking stats"})
+		return
+	}
+
+	// Calculate stats
+	total := len(allBookings)
+	paid := 0
+	pending := 0
+	failed := 0
+
+	for _, booking := range allBookings {
+		switch booking.PaymentStatus {
+		case "success":
+			paid++
+		case "pending":
+			pending++
+		case "failed":
+			failed++
+		}
+	}
+
+	c.JSON(200, gin.H{
+		"stats": gin.H{
+			"total":   total,
+			"paid":    paid,
+			"pending": pending,
+			"failed":  failed,
+		},
+	})
+}
+
 func CreateBooking(c *gin.Context) {
 	var booking models.Booking
 

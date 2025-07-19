@@ -355,23 +355,6 @@ func SendPaymentConfirmationEmail(c *gin.Context) {
 	})
 }
 
-// TestEmailEndpoint is a test endpoint to manually trigger email sending (for development only)
-func TestEmailEndpoint(c *gin.Context) {
-	bookingNumber := c.Query("bookingNumber")
-	if bookingNumber == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Booking number is required"})
-		return
-	}
-
-	// Send the confirmation email
-	sendPaymentConfirmationEmail(bookingNumber)
-
-	c.JSON(http.StatusOK, gin.H{
-		"status":  "success",
-		"message": "Test email sent successfully",
-	})
-}
-
 // Helper function to create Cashfree payment link using their API
 func createCashfreePaymentLink(req CashfreePaymentLinkRequest) (*CashfreePaymentLinkResponse, error) {
 	clientID := os.Getenv("CASHFREE_CLIENT_ID")
@@ -651,14 +634,10 @@ func sendPaymentConfirmationEmail(bookingNumber string) {
 		freeTickets = 1
 	}
 
-	// Calculate total amount (ticket price * paid tickets)
-	paidTickets := ticketCount - freeTickets
-	totalAmount := float64(paidTickets) * float64(booking.Ticket.Price)
-
 	// Send confirmation email
 	fmt.Printf("Sending email to: %s, Name: %s, Booking: %s, Ticket: %s, Count: %d, Amount: %.2f, Free: %d\n",
 		booking.User.Email, booking.User.FullName, booking.BookingNumber,
-		booking.Ticket.Name, ticketCount, totalAmount, freeTickets)
+		booking.Ticket.Name, ticketCount, booking.PaymentPrice, freeTickets)
 
 	err = helper.SendPaymentConfirmationEmail(
 		booking.User.Email,
@@ -666,7 +645,7 @@ func sendPaymentConfirmationEmail(bookingNumber string) {
 		booking.BookingNumber,
 		booking.Ticket.Name,
 		fmt.Sprintf("%d", ticketCount),
-		fmt.Sprintf("%.2f", totalAmount),
+		fmt.Sprintf("%.2f", booking.PaymentPrice),
 		"September 20, 2025 • 5:00 PM",
 		"Concordia High School Ground, Nagercoil",
 		freeTickets,
