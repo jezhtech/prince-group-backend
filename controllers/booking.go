@@ -123,11 +123,13 @@ func GetClientBookingsStats(c *gin.Context) {
 	paid := 0
 	pending := 0
 	failed := 0
+	revenue := 0.0
 
 	for _, booking := range allBookings {
 		switch booking.PaymentStatus {
 		case "success":
 			paid++
+			revenue += booking.PaymentPrice
 		case "pending":
 			pending++
 		case "failed":
@@ -141,6 +143,7 @@ func GetClientBookingsStats(c *gin.Context) {
 			"paid":    paid,
 			"pending": pending,
 			"failed":  failed,
+			"revenue": revenue,
 		},
 	})
 }
