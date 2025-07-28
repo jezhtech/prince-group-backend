@@ -119,31 +119,45 @@ func GetClientBookingsStats(c *gin.Context) {
 	}
 
 	// Calculate stats
-	total := len(allBookings)
-	paid := 0
-	pending := 0
-	failed := 0
+	totalBookings := len(allBookings)
+	totalTickets := 0
+	paidTickets := 0
+	pendingTickets := 0
+	failedTickets := 0
+	paidBookings := 0
+	pendingBookings := 0
+	failedBookings := 0
 	revenue := 0.0
 
 	for _, booking := range allBookings {
+		ticketCount := booking.TicketCount
+		totalTickets += ticketCount
+
 		switch booking.PaymentStatus {
 		case "success":
-			paid++
+			paidTickets += ticketCount
+			paidBookings++
 			revenue += booking.PaymentPrice
 		case "pending":
-			pending++
+			pendingTickets += ticketCount
+			pendingBookings++
 		case "failed":
-			failed++
+			failedTickets += ticketCount
+			failedBookings++
 		}
 	}
 
 	c.JSON(200, gin.H{
 		"stats": gin.H{
-			"total":   total,
-			"paid":    paid,
-			"pending": pending,
-			"failed":  failed,
-			"revenue": revenue,
+			"totalBookings":   totalBookings,
+			"paidBookings":    paidBookings,
+			"pendingBookings": pendingBookings,
+			"failedBookings":  failedBookings,
+			"totalTickets":    totalTickets,
+			"paidTickets":     paidTickets,
+			"pendingTickets":  pendingTickets,
+			"failedTickets":   failedTickets,
+			"revenue":         revenue,
 		},
 	})
 }
